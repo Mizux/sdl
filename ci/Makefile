@@ -119,34 +119,34 @@ STAGES := env devel build test install_env install_devel install_build install_t
 
 define make-platform-stage-target =
 #$$(info PLATFORM: '$1' STAGE: '$2')
-#$$(info Create targets: $1_all_$2 $(addprefix $1_, $(addsuffix _$2, $(DISTROS))).)
-targets_$1_$2 = $(addprefix $1_, $(addsuffix _$2, $(DISTROS)))
-.PHONY: $1_all_$2 $$(targets_$1_$2)
-$1_all_$2: $$(targets_$1_$2)
+#$$(info Create stage targets: $1_$2 $(addprefix $1_, $(addsuffix _$2, $(DISTROS))).)
+targets_$1_$2 := $(addprefix $1_, $(addsuffix _$2, $(DISTROS)))
+.PHONY: $1_$2 $$(targets_$1_$2)
+$1_$2: $$(targets_$1_$2)
 $$(targets_$1_$2): $1_%_$2: docker/%/Dockerfile
 	#@docker image rm -f ${IMAGE}:$1_$$*_$2 2>/dev/null
 	${DOCKER_BUILDX_CMD} --platform linux/$1 --target=$2 --tag ${IMAGE}:$1_$$*_$2 -f $$< ..
 
-#$$(info Create targets: save_$1_all_$2 $(addprefix save_$1_, $(addsuffix _$2, $(DISTROS))) (debug).)
-save_targets_$1_$2 = $(addprefix save_$1_, $(addsuffix _$2, $(DISTROS)))
-.PHONY: save_$1_all_$2 $$(save_targets_$1_$2)
-save_$1_all_$2: $$(save_targets_$1_$2)
+#$$(info Create save targets: save_$1_$2 $(addprefix save_$1_, $(addsuffix _$2, $(DISTROS))) (debug).)
+save_targets_$1_$2 := $(addprefix save_$1_, $(addsuffix _$2, $(DISTROS)))
+.PHONY: save_$1_$2 $$(save_targets_$1_$2)
+save_$1_$2: $$(save_targets_$1_$2)
 $$(save_targets_$1_$2): save_$1_%_$2: cache/$1/%/docker_$2.tar
 cache/$1/%/docker_$2.tar: $1_%_$2
 	@rm -f $$@
 	mkdir -p cache/$1/$$*
 	docker save ${IMAGE}:$1_$$*_$2 -o $$@
 
-#$$(info Create targets: $(addprefix sh_$1_, $(addsuffix _$2, $(DISTROS))) (debug).)
-sh_targets_$1_$2 = $(addprefix sh_$1_, $(addsuffix _$2, $(DISTROS)))
+#$$(info Create sh targets: $(addprefix sh_$1_, $(addsuffix _$2, $(DISTROS))) (debug).)
+sh_targets_$1_$2 := $(addprefix sh_$1_, $(addsuffix _$2, $(DISTROS)))
 .PHONY: $$(sh_targets_$1_$2)
 $$(sh_targets_$1_$2): sh_$1_%_$2: $1_%_$2
 	${DOCKER_RUN_CMD} --platform linux/$1 -it --name ${IMAGE}_$1_$$*_$2 ${IMAGE}:$1_$$*_$2
 
-#$$(info Create targets: clean_$1_all_$2 $(addprefix clean_$1_, $(addsuffix _$2, $(DISTROS))).)
-clean_targets_$1_$2 = $(addprefix clean_$1_, $(addsuffix _$2, $(DISTROS)))
-.PHONY: clean_$1_all_$2 $$(clean_targets_$1_$2)
-clean_$1_all_$2: $$(clean_targets_$1_$2)
+#$$(info Create clean targets: clean_$1_$2 $(addprefix clean_$1_, $(addsuffix _$2, $(DISTROS))).)
+clean_targets_$1_$2 := $(addprefix clean_$1_, $(addsuffix _$2, $(DISTROS)))
+.PHONY: clean_$1_$2 $$(clean_targets_$1_$2)
+clean_$1_$2: $$(clean_targets_$1_$2)
 $$(clean_targets_$1_$2): clean_$1_%_$2:
 	docker image rm -f ${IMAGE}:$1_$$*_$2 2>/dev/null
 	rm -f cache/$1/$$*/docker_$2.tar
@@ -158,7 +158,7 @@ $(foreach stage,$(STAGES),$(eval $(call make-platform-stage-target,$1,$(stage)))
 
 # merge
 .PHONY: clean_$1
-clean_$1: $(addprefix clean_$1_all_, $(STAGES))
+clean_$1: $(addprefix clean_$1_, $(STAGES))
 	-rmdir $(addprefix cache/$1/, $(DISTROS))
 	-rmdir cache/$1
 endef
@@ -166,8 +166,8 @@ endef
 $(foreach platform,$(PLATFORMS),$(eval $(call make-platform-target,$(platform))))
 
 ## MERGE ##
-.PHONY: clean_all
-clean_all: $(addprefix clean_, $(PLATFORMS))
+.PHONY: clean_platforms
+clean_platforms: $(addprefix clean_, $(PLATFORMS))
 
 #########
 ## WEB ##
@@ -213,7 +213,7 @@ clean_web: $(addprefix clean_web_, $(WEB_STAGES))
 ## CLEAN ##
 ###########
 .PHONY: clean
-clean: clean_all clean_web
+clean: clean_platforms clean_web
 	docker container prune -f
 	docker image prune -f
 	-rmdir cache
