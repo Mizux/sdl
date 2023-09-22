@@ -1,5 +1,4 @@
-# This file is just an orchestration
-cmake_minimum_required(VERSION 3.27)
+cmake_minimum_required(VERSION 3.21..3.28)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile command" TRUE)
@@ -116,8 +115,6 @@ elseif(UNIX AND NOT APPLE)
     INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
 endif()
 #target_link_options(${PROJECT_NAME} PRIVATE ...)
-
-
 if(NOT EMSCRIPTEN)
   target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2 OpenGL::GLES2)
 else()
